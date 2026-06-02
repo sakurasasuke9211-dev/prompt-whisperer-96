@@ -135,10 +135,12 @@ function Index() {
                   value={prompt}
                   onChange={setPrompt}
                   onSubmit={() => run("analyzing", "analysis", "Analyzing prompt quality…")}
+                  promptIntelligenceEnabled={pilEnabled}
+                  onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
               </div>
 
-              {prompt.trim() && (
+              {prompt.trim() && pilEnabled && (
                 <div className="mt-6">
                   <PromptIntelligencePreview />
                 </div>
