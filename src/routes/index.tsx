@@ -54,6 +54,7 @@ function Index() {
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
+  const [pilEnabled, setPilEnabled] = useState(true);
 
   const [selectedContext, setSelectedContext] = useState<string[]>(["industry", "geography", "timeHorizon"]);
   const [contextValues, setContextValues] = useState<Record<string, string>>(
