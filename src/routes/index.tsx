@@ -6,7 +6,6 @@ import { ChatSidebar } from "@/components/pil/ChatSidebar";
 import { AppHeader } from "@/components/pil/AppHeader";
 import { PromptInputBar } from "@/components/pil/PromptInputBar";
 import { PromptIntelligencePreview } from "@/components/pil/PromptIntelligencePreview";
-import { PromptQualityScore } from "@/components/pil/PromptQualityScore";
 import { MissingContextSelector } from "@/components/pil/MissingContextSelector";
 import { AssumptionCards } from "@/components/pil/AssumptionCards";
 import { ClarifyingQuestionCards } from "@/components/pil/ClarifyingQuestionCards";
@@ -159,7 +158,6 @@ function Index() {
           {/* STATE 2 */}
           {!loading && step === "analysis" && (
             <div className="mx-auto max-w-3xl space-y-5">
-              <PromptQualityScore />
               <MissingContextSelector
                 selected={selectedContext}
                 values={contextValues}
@@ -186,9 +184,9 @@ function Index() {
             <EnhancedPromptReview
               originalPrompt={prompt}
               enhancedPrompt={enhanced}
+              onOriginalChange={setPrompt}
               onEnhancedChange={setEnhanced}
               onGenerate={() => run("generating", "response", "Generating response…")}
-              onEdit={() => setStep("analysis")}
             />
           )}
 
