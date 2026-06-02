@@ -54,6 +54,7 @@ function Index() {
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
+  const [pilEnabled, setPilEnabled] = useState(true);
 
   const [selectedContext, setSelectedContext] = useState<string[]>(["industry", "geography", "timeHorizon"]);
   const [contextValues, setContextValues] = useState<Record<string, string>>(
@@ -134,10 +135,12 @@ function Index() {
                   value={prompt}
                   onChange={setPrompt}
                   onSubmit={() => run("analyzing", "analysis", "Analyzing prompt quality…")}
+                  promptIntelligenceEnabled={pilEnabled}
+                  onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
               </div>
 
-              {prompt.trim() && (
+              {prompt.trim() && pilEnabled && (
                 <div className="mt-6">
                   <PromptIntelligencePreview />
                 </div>
