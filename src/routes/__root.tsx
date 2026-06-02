@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Prompt Intelligence" },
+      { name: "description", content: "Prompt Guardian enhances AI interactions by analyzing user prompts for clarity and context before generation." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Prompt Intelligence" },
+      { property: "og:description", content: "Prompt Guardian enhances AI interactions by analyzing user prompts for clarity and context before generation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Prompt Intelligence" },
+      { name: "twitter:description", content: "Prompt Guardian enhances AI interactions by analyzing user prompts for clarity and context before generation." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ee87d2a9-37ba-4930-9d13-26c8d4d7451e/id-preview-76d89792--4297f7b6-eb9a-4bf6-a8ff-28fdf5f1e7c2.lovable.app-1780429000081.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ee87d2a9-37ba-4930-9d13-26c8d4d7451e/id-preview-76d89792--4297f7b6-eb9a-4bf6-a8ff-28fdf5f1e7c2.lovable.app-1780429000081.png" },
     ],
     links: [
       {
