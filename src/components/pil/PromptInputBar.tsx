@@ -1,13 +1,22 @@
-import { Paperclip, Mic, ArrowUp } from "lucide-react";
+import { Paperclip, Mic, ArrowUp, Sparkles } from "lucide-react";
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
+  promptIntelligenceEnabled?: boolean;
+  onTogglePromptIntelligence?: () => void;
 }
 
-export function PromptInputBar({ value, onChange, onSubmit, disabled }: Props) {
+export function PromptInputBar({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  promptIntelligenceEnabled,
+  onTogglePromptIntelligence,
+}: Props) {
   return (
     <div className="rounded-3xl border border-border bg-card p-4 shadow-sm">
       <textarea
@@ -25,6 +34,17 @@ export function PromptInputBar({ value, onChange, onSubmit, disabled }: Props) {
           <Paperclip className="size-5" />
         </button>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onTogglePromptIntelligence}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              promptIntelligenceEnabled
+                ? "border-primary/40 bg-primary/15 text-primary"
+                : "border-border bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Sparkles className="size-3.5" />
+            Intelligence
+          </button>
           <button className="text-muted-foreground transition-colors hover:text-foreground">
             <Mic className="size-5" />
           </button>
