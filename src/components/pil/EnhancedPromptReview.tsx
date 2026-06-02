@@ -1,25 +1,29 @@
 import { useState } from "react";
-import { Sparkles, Zap, ArrowRight } from "lucide-react";
+import { Sparkles, Zap, ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { REVIEW_QUESTIONS } from "@/lib/pil-data";
 import { ImprovementMetrics } from "./ImprovementMetrics";
 
 interface Props {
   originalPrompt: string;
   enhancedPrompt: string;
+  onOriginalChange: (v: string) => void;
   onEnhancedChange: (v: string) => void;
   onGenerate: () => void;
-  onEdit: () => void;
 }
+
+type Choice = "original" | "enhanced";
 
 export function EnhancedPromptReview({
   originalPrompt,
   enhancedPrompt,
+  onOriginalChange,
   onEnhancedChange,
   onGenerate,
-  onEdit,
 }: Props) {
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Choice>("enhanced");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -29,26 +33,62 @@ export function EnhancedPromptReview({
           Prompt Optimization Complete
         </h2>
         <p className="mt-1 text-muted-foreground">
-          Review the upgraded prompt before generating the response.
+          Edit and select which prompt to use before generating the response.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Original Prompt
-          </p>
-          <p className="mt-3 text-sm leading-relaxed">{originalPrompt}</p>
-        </div>
-        <div className="rounded-2xl border border-primary/40 bg-primary/5 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-primary">Enhanced Prompt</p>
+        <button
+          type="button"
+          onClick={() => setSelected("original")}
+          className={cn(
+            "rounded-2xl border bg-card p-5 text-left transition-colors",
+            selected === "original" ? "border-primary ring-1 ring-primary/40" : "border-border",
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Original Prompt (with edits)
+            </p>
+            {selected === "original" ? (
+              <CheckCircle2 className="size-5 text-primary" />
+            ) : (
+              <Circle className="size-5 text-muted-foreground" />
+            )}
+          </div>
           <textarea
-            value={enhancedPrompt}
-            onChange={(e) => onEnhancedChange(e.target.value)}
+            value={originalPrompt}
+            onChange={(e) => onOriginalChange(e.target.value)}
+            onFocus={() => setSelected("original")}
             rows={6}
             className="mt-3 w-full resize-none rounded-lg border border-input bg-background/40 p-3 text-sm leading-relaxed focus:border-primary focus:outline-none"
           />
-        </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelected("enhanced")}
+          className={cn(
+            "rounded-2xl border bg-primary/5 p-5 text-left transition-colors",
+            selected === "enhanced" ? "border-primary ring-1 ring-primary/40" : "border-primary/40",
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-primary">Enhanced Prompt</p>
+            {selected === "enhanced" ? (
+              <CheckCircle2 className="size-5 text-primary" />
+            ) : (
+              <Circle className="size-5 text-muted-foreground" />
+            )}
+          </div>
+          <textarea
+            value={enhancedPrompt}
+            onChange={(e) => onEnhancedChange(e.target.value)}
+            onFocus={() => setSelected("enhanced")}
+            rows={6}
+            className="mt-3 w-full resize-none rounded-lg border border-input bg-background/40 p-3 text-sm leading-relaxed focus:border-primary focus:outline-none"
+          />
+        </button>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-5">
@@ -81,9 +121,6 @@ export function EnhancedPromptReview({
       <div className="flex flex-wrap gap-3">
         <Button size="lg" onClick={onGenerate}>
           Generate Response <ArrowRight className="size-4" />
-        </Button>
-        <Button size="lg" variant="outline" onClick={onEdit}>
-          Edit Prompt
         </Button>
       </div>
     </div>
