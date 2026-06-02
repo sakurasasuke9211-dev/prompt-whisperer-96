@@ -184,9 +184,9 @@ function Index() {
             <EnhancedPromptReview
               originalPrompt={prompt}
               enhancedPrompt={enhanced}
+              onOriginalChange={setPrompt}
               onEnhancedChange={setEnhanced}
               onGenerate={() => run("generating", "response", "Generating response…")}
-              onEdit={() => setStep("analysis")}
             />
           )}
 
