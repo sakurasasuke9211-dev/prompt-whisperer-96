@@ -158,7 +158,6 @@ function Index() {
           {/* STATE 2 */}
           {!loading && step === "analysis" && (
             <div className="mx-auto max-w-3xl space-y-5">
-              <PromptQualityScore />
               <MissingContextSelector
                 selected={selectedContext}
                 values={contextValues}
