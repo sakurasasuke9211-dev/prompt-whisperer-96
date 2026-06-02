@@ -6,7 +6,6 @@ import { ChatSidebar } from "@/components/pil/ChatSidebar";
 import { AppHeader } from "@/components/pil/AppHeader";
 import { PromptInputBar } from "@/components/pil/PromptInputBar";
 import { PromptIntelligencePreview } from "@/components/pil/PromptIntelligencePreview";
-import { PromptQualityScore } from "@/components/pil/PromptQualityScore";
 import { MissingContextSelector } from "@/components/pil/MissingContextSelector";
 import { AssumptionCards } from "@/components/pil/AssumptionCards";
 import { ClarifyingQuestionCards } from "@/components/pil/ClarifyingQuestionCards";
