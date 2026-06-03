@@ -69,7 +69,7 @@ function Index() {
   const [step, setStep] = useState<Step>("entry");
   const [loading, setLoading] = useState<Loading>(null);
   const [error, setError] = useState<string | null>(null);
-  const [usingFallback, setUsingFallback] = useState(false);
+  
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
@@ -106,7 +106,6 @@ function Index() {
     setAssumptionValues({});
     setClarifyingAnswers({});
     setError(null);
-    setUsingFallback(false);
   }
 
   // Submit from screen 1: if "Prompting" is on, run the intelligence flow;
@@ -131,10 +130,9 @@ function Index() {
     setFollowUpInput("");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
-      if (res.mocked) setUsingFallback(true);
       setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
     } catch {
-      setError("Could not reach Grok to generate the response. Please try again.");
+      setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -146,11 +144,9 @@ function Index() {
       return;
     }
     setError(null);
-    setUsingFallback(false);
     setLoading("analyzing");
     try {
       const raw = await runAnalyze({ data: { originalPrompt: prompt } });
-      if (raw.mocked) setUsingFallback(true);
       const res = analyzeNormalize(raw);
       setAnalysis(res);
       setSelectedContext(res.fields.map((f) => f.key));
@@ -160,7 +156,7 @@ function Index() {
       setClarifyingAnswers({});
       setStep("analysis");
     } catch {
-      setError("Could not reach Grok to analyze the prompt. Please try again.");
+      setError("Could not reach the AI to analyze the prompt. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -202,12 +198,11 @@ function Index() {
           clarifyingAnswers: clarifying,
         },
       });
-      if (res.mocked) setUsingFallback(true);
       setEnhanced(res.enhancedPrompt);
       setMetrics(res.metrics);
       setStep("review");
     } catch {
-      setError("Could not reach Grok to generate the enhanced prompt. Please try again.");
+      setError("Could not reach the AI to generate the enhanced prompt. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -219,11 +214,10 @@ function Index() {
     setFinalPrompt(chosenPrompt);
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
-      if (res.mocked) setUsingFallback(true);
       setFinalResponse(res.response);
       setStep("response");
     } catch {
-      setError("Could not reach Grok to generate the response. Please try again.");
+      setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -247,12 +241,6 @@ function Index() {
             </div>
           )}
 
-          {usingFallback && !error && (
-            <div className="mx-auto mb-6 flex max-w-3xl items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning">
-              <AlertTriangle className="size-4" />
-              Using fallback demo data.
-            </div>
-          )}
 
           {loading && (
             <LoadingOverlay

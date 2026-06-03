@@ -1,9 +1,9 @@
 import process from "node:process";
 
-// Server-only Grok (xAI) helper. Never import this file from client code.
+// Server-only Groq helper. Never import this file from client code.
 // Reads env at call time so it works in the Worker request context.
 
-export interface CallGrokOptions {
+export interface CallGroqOptions {
   system?: string;
   prompt: string;
   /** When true, instruct the model to respond with JSON and parse it. */
@@ -11,67 +11,61 @@ export interface CallGrokOptions {
   temperature?: number;
 }
 
-export interface GrokResult {
+export interface GroqResult {
   /** Raw text content returned by the model. */
   text: string;
-  /** True when the call fell back to a mock (no key / API error). */
-  mocked: boolean;
 }
 
 function getConfig() {
-  return {
-    apiKey: process.env.XAI_API_KEY,
-    baseUrl: process.env.XAI_BASE_URL || "https://api.x.ai/v1",
-    model: process.env.GROK_MODEL || "grok-3",
-  };
+  const apiKey = process.env.GROQ_API_KEY;
+  const baseUrl = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  return { apiKey, baseUrl, model };
 }
 
 /**
- * Calls the Grok chat completions API. If no API key is configured or the
- * request fails, returns { mocked: true } with empty text so callers can fall
- * back to deterministic mock data and keep the demo working.
+ * Calls the Groq chat completions API. Throws on any failure so callers can
+ * surface a clear error to the user — no mock fallback.
  */
-export async function callGrok(options: CallGrokOptions): Promise<GrokResult> {
+export async function callGroq(options: CallGroqOptions): Promise<GroqResult> {
   const { apiKey, baseUrl, model } = getConfig();
 
   if (!apiKey) {
-    return { text: "", mocked: true };
+    throw new Error("GROQ_API_KEY is not configured.");
   }
 
-  try {
-    const messages: Array<{ role: string; content: string }> = [];
-    if (options.system) messages.push({ role: "system", content: options.system });
-    messages.push({ role: "user", content: options.prompt });
+  const messages: Array<{ role: string; content: string }> = [];
+  if (options.system) messages.push({ role: "system", content: options.system });
+  messages.push({ role: "user", content: options.prompt });
 
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: options.temperature ?? 0.4,
-        ...(options.json ? { response_format: { type: "json_object" } } : {}),
-      }),
-    });
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.4,
+      ...(options.json ? { response_format: { type: "json_object" } } : {}),
+    }),
+  });
 
-    if (!res.ok) {
-      console.error(`Grok API error: ${res.status} ${res.statusText}`);
-      return { text: "", mocked: true };
-    }
-
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content ?? "";
-    if (!text) return { text: "", mocked: true };
-    return { text, mocked: false };
-  } catch (error) {
-    console.error("Grok request failed:", error);
-    return { text: "", mocked: true };
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`Groq API error: ${res.status} ${res.statusText} ${detail}`);
+    throw new Error(`Groq API error (${res.status}): ${res.statusText}`);
   }
+
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const text = data.choices?.[0]?.message?.content ?? "";
+  if (!text) {
+    throw new Error("Groq API returned an empty response.");
+  }
+  return { text };
 }
 
 /** Safely parse JSON from a model response (handles ```json fences and noise). */

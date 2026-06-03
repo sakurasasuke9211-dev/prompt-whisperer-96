@@ -1,4 +1,4 @@
-import { callGrok, safeJsonParse } from "./grok.server";
+import { callGroq, safeJsonParse } from "./grok.server";
 
 // Shared types for the Prompt Intelligence Layer backend.
 
@@ -16,7 +16,6 @@ export interface AnalyzePromptResult {
   riskLevel: "Low" | "Medium" | "High";
   riskReason: string;
   suggestedEnhancedPrompt: string;
-  mocked: boolean;
 }
 
 export interface ImprovementMetric {
@@ -30,12 +29,10 @@ export interface EnhancedPromptResult {
   enhancedPrompt: string;
   newScore: number;
   metrics: ImprovementMetric[];
-  mocked: boolean;
 }
 
 export interface FinalResponseResult {
   response: string;
-  mocked: boolean;
 }
 
 function statusForScore(score: number): string {
@@ -44,63 +41,7 @@ function statusForScore(score: number): string {
   return "Weak";
 }
 
-// ---- Mock fallbacks (keep the demo working without API credentials) ----
-
-function mockAnalyze(prompt: string): AnalyzePromptResult {
-  return {
-    score: 62,
-    status: statusForScore(62),
-    missingContext: [
-      { key: "industry", label: "Industry" },
-      { key: "geography", label: "Geography" },
-      { key: "timeHorizon", label: "Time Horizon" },
-      { key: "audience", label: "Intended Audience" },
-      { key: "outputFormat", label: "Output Format" },
-    ],
-    assumptions: [
-      "Assuming global market data",
-      "Assuming current year trends",
-      "Assuming a general business audience",
-      "Assuming recommendations are strategic, not operational",
-    ],
-    clarifyingQuestions: [
-      "Which industry should this focus on?",
-      "Which region or market?",
-      "Strategic or operational recommendations?",
-      "Who is the target audience?",
-    ],
-    riskLevel: "Medium",
-    riskReason:
-      "The prompt is broad and lacks scope, so the AI may make assumptions that reduce accuracy.",
-    suggestedEnhancedPrompt: `${prompt.trim()} Please specify industry, geography, time horizon, intended audience, and desired output format for a more accurate, reliable answer.`,
-    mocked: true,
-  };
-}
-
-function mockEnhanced(prompt: string): EnhancedPromptResult {
-  const enhancedPrompt = `${prompt.trim()} Focus on a specific industry and region, target a defined audience, present findings in a clear structured format, and state any assumptions explicitly.`;
-  return {
-    enhancedPrompt,
-    newScore: 92,
-    metrics: [
-      { label: "Prompt Clarity", from: "62", to: "92", positive: true },
-      { label: "Context Completeness", from: "55%", to: "95%", positive: true },
-      { label: "Assumptions Reduced", from: "4", to: "1", positive: true },
-      { label: "Expected Verification Effort", from: "", to: "−35%", positive: true },
-    ],
-    mocked: true,
-  };
-}
-
-function mockFinal(): FinalResponseResult {
-  return {
-    response:
-      "Here is a structured response based on your enhanced prompt. The added context (industry, region, audience, and output format) lets the analysis stay focused and reduces the need for you to verify assumptions. Key findings and recommendations are organized into clear sections with explicit caveats where data is limited.",
-    mocked: true,
-  };
-}
-
-// ---- Core logic (Grok-backed with safe parsing + fallbacks) ----
+// ---- Core logic (Groq-backed) ----
 
 export async function analyzePromptLogic(originalPrompt: string): Promise<AnalyzePromptResult> {
   const system =
@@ -109,16 +50,16 @@ export async function analyzePromptLogic(originalPrompt: string): Promise<Analyz
     '"assumptions": string[], "clarifyingQuestions": string[], "riskLevel": "Low"|"Medium"|"High", ' +
     '"riskReason": string, "suggestedEnhancedPrompt": string}.';
 
-  const { text, mocked } = await callGrok({
+  const { text } = await callGroq({
     system,
     prompt: `Analyze this prompt:\n"""${originalPrompt}"""`,
     json: true,
   });
 
-  if (mocked) return mockAnalyze(originalPrompt);
-
   const parsed = safeJsonParse<Partial<AnalyzePromptResult>>(text);
-  if (!parsed || typeof parsed.score !== "number") return mockAnalyze(originalPrompt);
+  if (!parsed || typeof parsed.score !== "number") {
+    throw new Error("Failed to parse analysis response from the AI.");
+  }
 
   const score = Math.max(0, Math.min(100, Math.round(parsed.score)));
   return {
@@ -131,8 +72,9 @@ export async function analyzePromptLogic(originalPrompt: string): Promise<Analyz
       : [],
     riskLevel: parsed.riskLevel === "Low" || parsed.riskLevel === "High" ? parsed.riskLevel : "Medium",
     riskReason: parsed.riskReason || "Prompt may lack sufficient context.",
-    suggestedEnhancedPrompt: parsed.suggestedEnhancedPrompt || mockAnalyze(originalPrompt).suggestedEnhancedPrompt,
-    mocked: false,
+    suggestedEnhancedPrompt:
+      parsed.suggestedEnhancedPrompt ||
+      `${originalPrompt.trim()} Please specify industry, geography, time horizon, intended audience, and desired output format.`,
   };
 }
 
@@ -161,32 +103,30 @@ export async function generateEnhancedPromptLogic(
     'Respond ONLY with strict JSON: {"enhancedPrompt": string, "newScore": number (0-100), ' +
     '"metrics": [{"label": string, "from": string, "to": string, "positive": boolean}]}.';
 
-  const { text, mocked } = await callGrok({
+  const { text } = await callGroq({
     system,
     prompt: `Original prompt:\n"""${input.originalPrompt}"""\n\nContext & answers:\n${JSON.stringify(detail, null, 2)}`,
     json: true,
   });
 
-  if (mocked) return mockEnhanced(input.originalPrompt);
-
   const parsed = safeJsonParse<Partial<EnhancedPromptResult>>(text);
-  if (!parsed || !parsed.enhancedPrompt) return mockEnhanced(input.originalPrompt);
+  if (!parsed || !parsed.enhancedPrompt) {
+    throw new Error("Failed to parse enhanced prompt response from the AI.");
+  }
 
   const newScore = Math.max(0, Math.min(100, Math.round(parsed.newScore ?? 90)));
   return {
     enhancedPrompt: parsed.enhancedPrompt,
     newScore,
-    metrics: Array.isArray(parsed.metrics) ? parsed.metrics : mockEnhanced(input.originalPrompt).metrics,
-    mocked: false,
+    metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
   };
 }
 
 export async function generateFinalResponseLogic(enhancedPrompt: string): Promise<FinalResponseResult> {
-  const { text, mocked } = await callGrok({
+  const { text } = await callGroq({
     system: "You are a helpful, reliable assistant. Answer clearly and cite assumptions where relevant.",
     prompt: enhancedPrompt,
   });
 
-  if (mocked || !text) return mockFinal();
-  return { response: text, mocked: false };
+  return { response: text };
 }
