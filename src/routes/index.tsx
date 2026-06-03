@@ -127,12 +127,16 @@ function Index() {
   async function handleFollowUp() {
     const text = followUpInput.trim();
     if (!text) return;
+    setFollowUpInput("");
+    if (pilEnabled) {
+      await handleAnalyze(text);
+      return;
+    }
     setError(null);
     setLoading("generating");
-    setFollowUpInput("");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
-      setFollowUps((p) => [...p, { prompt: text, response: res.response, usedPil: pilEnabled }]);
+      setFollowUps((p) => [...p, { prompt: text, response: res.response, usedPil: false }]);
     } catch {
       setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
