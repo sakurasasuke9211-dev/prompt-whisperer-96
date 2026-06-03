@@ -118,10 +118,13 @@ export function EnhancedPromptReview({
         </p>
       </div>
 
-      <ImprovementMetrics />
+      <ImprovementMetrics metrics={metrics} />
 
       <div className="flex flex-wrap gap-3">
-        <Button size="lg" onClick={onGenerate}>
+        <Button
+          size="lg"
+          onClick={() => onGenerate(selected === "original" ? originalPrompt : enhancedPrompt)}
+        >
           Generate Response <ArrowRight className="size-4" />
         </Button>
       </div>
