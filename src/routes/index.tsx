@@ -99,6 +99,7 @@ function Index() {
     setAnalysis(null);
     setMetrics(undefined);
     setFinalResponse("");
+    setFinalUsedPil(false);
     setFollowUps([]);
     setFollowUpInput("");
     setSelectedContext([]);
