@@ -79,7 +79,8 @@ function Index() {
   const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
   const [finalResponse, setFinalResponse] = useState("");
   const [finalPrompt, setFinalPrompt] = useState("");
-  const [followUps, setFollowUps] = useState<{ prompt: string; response: string }[]>([]);
+  const [finalUsedPil, setFinalUsedPil] = useState(false);
+  const [followUps, setFollowUps] = useState<{ prompt: string; response: string; usedPil: boolean }[]>([]);
   const [followUpInput, setFollowUpInput] = useState("");
 
   // Analysis-screen selections
