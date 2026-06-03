@@ -97,12 +97,44 @@ function Index() {
     setAnalysis(null);
     setMetrics(undefined);
     setFinalResponse("");
+    setFollowUps([]);
+    setFollowUpInput("");
     setSelectedContext([]);
     setContextValues({});
     setAcceptedAssumptions({});
     setAssumptionValues({});
     setClarifyingAnswers({});
     setError(null);
+  }
+
+  // Submit from screen 1: if "Prompting" is on, run the intelligence flow;
+  // otherwise generate the response directly.
+  async function handleSubmit() {
+    if (!prompt.trim()) {
+      setError("Please enter a prompt.");
+      return;
+    }
+    if (pilEnabled) {
+      await handleAnalyze();
+    } else {
+      await handleGenerate(prompt);
+    }
+  }
+
+  async function handleFollowUp() {
+    const text = followUpInput.trim();
+    if (!text) return;
+    setError(null);
+    setLoading("generating");
+    setFollowUpInput("");
+    try {
+      const res = await runFinal({ data: { enhancedPrompt: text } });
+      setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
+    } catch {
+      setError("Could not generate the response. Please try again.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   async function handleAnalyze() {
