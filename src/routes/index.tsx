@@ -144,7 +144,6 @@ function Index() {
       return;
     }
     setError(null);
-    setUsingFallback(false);
     setLoading("analyzing");
     try {
       const raw = await runAnalyze({ data: { originalPrompt: prompt } });
