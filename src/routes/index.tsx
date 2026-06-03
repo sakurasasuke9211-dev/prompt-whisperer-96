@@ -247,6 +247,13 @@ function Index() {
             </div>
           )}
 
+          {usingFallback && !error && (
+            <div className="mx-auto mb-6 flex max-w-3xl items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning">
+              <AlertTriangle className="size-4" />
+              Using fallback demo data.
+            </div>
+          )}
+
           {loading && (
             <LoadingOverlay
               label={
