@@ -1,14 +1,17 @@
 import { Check } from "lucide-react";
-import { CONTEXT_FIELDS } from "@/lib/pil-data";
+import { CONTEXT_FIELDS, type ContextField } from "@/lib/pil-data";
 
 interface Props {
   selected: string[];
   values: Record<string, string>;
   onToggle: (key: string) => void;
   onChange: (key: string, value: string) => void;
+  fields?: ContextField[];
 }
 
-export function MissingContextSelector({ selected, values, onToggle, onChange }: Props) {
+export function MissingContextSelector({ selected, values, onToggle, onChange, fields }: Props) {
+  const items = fields && fields.length > 0 ? fields : CONTEXT_FIELDS;
+
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <h3 className="font-medium">Missing Context Options</h3>
@@ -17,7 +20,7 @@ export function MissingContextSelector({ selected, values, onToggle, onChange }:
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {CONTEXT_FIELDS.map((f) => {
+        {items.map((f) => {
           const active = selected.includes(f.key);
           return (
             <button
@@ -38,7 +41,7 @@ export function MissingContextSelector({ selected, values, onToggle, onChange }:
 
       {selected.length > 0 && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {CONTEXT_FIELDS.filter((f) => selected.includes(f.key)).map((f) => (
+          {items.filter((f) => selected.includes(f.key)).map((f) => (
             <div key={f.key}>
               <label className="text-xs text-muted-foreground">{f.label}</label>
               <input
