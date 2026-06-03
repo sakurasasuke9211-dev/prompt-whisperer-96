@@ -97,9 +97,7 @@ function Index() {
     setEnhanced(ENHANCED_PROMPT);
     setAnalysis(null);
     setMetrics(undefined);
-    setFinalResponse("");
-    setFinalUsedPil(false);
-    setFollowUps([]);
+    setMessages([]);
     setFollowUpInput("");
     setSelectedContext([]);
     setContextValues({});
