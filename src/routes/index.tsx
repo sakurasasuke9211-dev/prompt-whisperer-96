@@ -72,12 +72,14 @@ function Index() {
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
-  const [pilEnabled, setPilEnabled] = useState(true);
+  const [pilEnabled, setPilEnabled] = useState(false);
 
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
   const [finalResponse, setFinalResponse] = useState("");
   const [finalPrompt, setFinalPrompt] = useState("");
+  const [followUps, setFollowUps] = useState<{ prompt: string; response: string }[]>([]);
+  const [followUpInput, setFollowUpInput] = useState("");
 
   // Analysis-screen selections
   const [selectedContext, setSelectedContext] = useState<string[]>([]);
