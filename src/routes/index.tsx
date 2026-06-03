@@ -216,7 +216,6 @@ function Index() {
     setFinalPrompt(chosenPrompt);
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
-      if (res.mocked) setUsingFallback(true);
       setFinalResponse(res.response);
       setStep("response");
     } catch {
