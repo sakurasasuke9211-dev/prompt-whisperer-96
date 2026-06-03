@@ -149,7 +149,6 @@ function Index() {
     setLoading("analyzing");
     try {
       const raw = await runAnalyze({ data: { originalPrompt: prompt } });
-      if (raw.mocked) setUsingFallback(true);
       const res = analyzeNormalize(raw);
       setAnalysis(res);
       setSelectedContext(res.fields.map((f) => f.key));
