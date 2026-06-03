@@ -79,7 +79,8 @@ function Index() {
   const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
   const [finalResponse, setFinalResponse] = useState("");
   const [finalPrompt, setFinalPrompt] = useState("");
-  const [followUps, setFollowUps] = useState<{ prompt: string; response: string }[]>([]);
+  const [finalUsedPil, setFinalUsedPil] = useState(false);
+  const [followUps, setFollowUps] = useState<{ prompt: string; response: string; usedPil: boolean }[]>([]);
   const [followUpInput, setFollowUpInput] = useState("");
 
   // Analysis-screen selections
@@ -98,6 +99,7 @@ function Index() {
     setAnalysis(null);
     setMetrics(undefined);
     setFinalResponse("");
+    setFinalUsedPil(false);
     setFollowUps([]);
     setFollowUpInput("");
     setSelectedContext([]);
@@ -125,12 +127,16 @@ function Index() {
   async function handleFollowUp() {
     const text = followUpInput.trim();
     if (!text) return;
+    setFollowUpInput("");
+    if (pilEnabled) {
+      await handleAnalyze(text);
+      return;
+    }
     setError(null);
     setLoading("generating");
-    setFollowUpInput("");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
-      setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
+      setFollowUps((p) => [...p, { prompt: text, response: res.response, usedPil: false }]);
     } catch {
       setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
@@ -138,15 +144,17 @@ function Index() {
     }
   }
 
-  async function handleAnalyze() {
-    if (!prompt.trim()) {
+  async function handleAnalyze(overridePrompt?: string) {
+    const source = (overridePrompt ?? prompt).trim();
+    if (!source) {
       setError("Please enter a prompt to analyze.");
       return;
     }
+    if (overridePrompt) setPrompt(overridePrompt);
     setError(null);
     setLoading("analyzing");
     try {
-      const raw = await runAnalyze({ data: { originalPrompt: prompt } });
+      const raw = await runAnalyze({ data: { originalPrompt: source } });
       const res = analyzeNormalize(raw);
       setAnalysis(res);
       setSelectedContext(res.fields.map((f) => f.key));
@@ -212,6 +220,7 @@ function Index() {
     setError(null);
     setLoading("generating");
     setFinalPrompt(chosenPrompt);
+    setFinalUsedPil(pilEnabled);
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
       setFinalResponse(res.response);
@@ -331,17 +340,30 @@ function Index() {
           {!loading && step === "response" && (
             <div className="mx-auto flex h-full max-w-3xl flex-col">
               <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
+                <FinalResponseCard
+                  enhancedPrompt={finalPrompt || enhanced}
+                  response={finalResponse}
+                  showEnhancedBadge={finalUsedPil}
+                />
                 {followUps.map((m, i) => (
-                  <FinalResponseCard key={i} enhancedPrompt={m.prompt} response={m.response} />
+                  <FinalResponseCard
+                    key={i}
+                    enhancedPrompt={m.prompt}
+                    response={m.response}
+                    showEnhancedBadge={m.usedPil}
+                  />
                 ))}
-                <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                {(finalUsedPil || followUps.some((m) => m.usedPil)) && (
+                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                )}
               </div>
               <div className="sticky bottom-0 bg-background pt-2">
                 <PromptInputBar
                   value={followUpInput}
                   onChange={setFollowUpInput}
                   onSubmit={handleFollowUp}
+                  promptIntelligenceEnabled={pilEnabled}
+                  onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
               </div>
             </div>
