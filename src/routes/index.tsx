@@ -77,10 +77,9 @@ function Index() {
 
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
-  const [finalResponse, setFinalResponse] = useState("");
-  const [finalPrompt, setFinalPrompt] = useState("");
-  const [finalUsedPil, setFinalUsedPil] = useState(false);
-  const [followUps, setFollowUps] = useState<{ prompt: string; response: string; usedPil: boolean }[]>([]);
+  const [messages, setMessages] = useState<
+    { userPrompt: string; response: string; usedPil: boolean }[]
+  >([]);
   const [followUpInput, setFollowUpInput] = useState("");
 
   // Analysis-screen selections
@@ -98,9 +97,7 @@ function Index() {
     setEnhanced(ENHANCED_PROMPT);
     setAnalysis(null);
     setMetrics(undefined);
-    setFinalResponse("");
-    setFinalUsedPil(false);
-    setFollowUps([]);
+    setMessages([]);
     setFollowUpInput("");
     setSelectedContext([]);
     setContextValues({});
@@ -136,7 +133,8 @@ function Index() {
     setLoading("generating");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
-      setFollowUps((p) => [...p, { prompt: text, response: res.response, usedPil: false }]);
+      setMessages((p) => [...p, { userPrompt: text, response: res.response, usedPil: false }]);
+      setStep("response");
     } catch {
       setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
@@ -219,11 +217,11 @@ function Index() {
   async function handleGenerate(chosenPrompt: string) {
     setError(null);
     setLoading("generating");
-    setFinalPrompt(chosenPrompt);
-    setFinalUsedPil(pilEnabled);
+    const usedPil = pilEnabled;
+    const userPrompt = usedPil ? prompt : chosenPrompt;
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
-      setFinalResponse(res.response);
+      setMessages((p) => [...p, { userPrompt, response: res.response, usedPil }]);
       setStep("response");
     } catch {
       setError("Could not reach the AI to generate the response. Please try again.");
@@ -340,21 +338,16 @@ function Index() {
           {!loading && step === "response" && (
             <div className="mx-auto flex h-full max-w-3xl flex-col">
               <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                <FinalResponseCard
-                  enhancedPrompt={finalPrompt || enhanced}
-                  response={finalResponse}
-                  showEnhancedBadge={finalUsedPil}
-                />
-                {followUps.map((m, i) => (
+                {messages.map((m, i) => (
                   <FinalResponseCard
                     key={i}
-                    enhancedPrompt={m.prompt}
+                    enhancedPrompt={m.userPrompt}
                     response={m.response}
                     showEnhancedBadge={m.usedPil}
                   />
                 ))}
-                {(finalUsedPil || followUps.some((m) => m.usedPil)) && (
-                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                {messages.some((m) => m.usedPil) && (
+                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={enhanced} />
                 )}
               </div>
               <div className="sticky bottom-0 bg-background pt-2">
