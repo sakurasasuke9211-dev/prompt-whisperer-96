@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sparkles, Zap, ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { REVIEW_QUESTIONS } from "@/lib/pil-data";
+import { REVIEW_QUESTIONS, type Metric } from "@/lib/pil-data";
 import { ImprovementMetrics } from "./ImprovementMetrics";
 
 interface Props {
@@ -10,7 +10,8 @@ interface Props {
   enhancedPrompt: string;
   onOriginalChange: (v: string) => void;
   onEnhancedChange: (v: string) => void;
-  onGenerate: () => void;
+  onGenerate: (chosenPrompt: string) => void;
+  metrics?: Metric[];
 }
 
 type Choice = "original" | "enhanced";
@@ -21,6 +22,7 @@ export function EnhancedPromptReview({
   onOriginalChange,
   onEnhancedChange,
   onGenerate,
+  metrics,
 }: Props) {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [selected, setSelected] = useState<Choice>("enhanced");
@@ -116,10 +118,13 @@ export function EnhancedPromptReview({
         </p>
       </div>
 
-      <ImprovementMetrics />
+      <ImprovementMetrics metrics={metrics} />
 
       <div className="flex flex-wrap gap-3">
-        <Button size="lg" onClick={onGenerate}>
+        <Button
+          size="lg"
+          onClick={() => onGenerate(selected === "original" ? originalPrompt : enhancedPrompt)}
+        >
           Generate Response <ArrowRight className="size-4" />
         </Button>
       </div>

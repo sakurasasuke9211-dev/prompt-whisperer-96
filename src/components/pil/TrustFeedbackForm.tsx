@@ -1,12 +1,43 @@
 import { useState } from "react";
 import { Star, CheckCircle2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { submitFeedback } from "@/lib/pil.functions";
 
-export function TrustFeedbackForm() {
+interface Props {
+  originalPrompt?: string;
+  enhancedPrompt?: string;
+}
+
+export function TrustFeedbackForm({ originalPrompt, enhancedPrompt }: Props) {
+  const submit = useServerFn(submitFeedback);
   const [rating, setRating] = useState(0);
   const [verify, setVerify] = useState<string>("");
   const [comments, setComments] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setSending(true);
+    setError(null);
+    try {
+      await submit({
+        data: {
+          originalPrompt,
+          enhancedPrompt,
+          trustRating: rating,
+          reducedVerification: verify,
+          comments: comments || undefined,
+        },
+      });
+      setSubmitted(true);
+    } catch {
+      setError("Could not submit feedback. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   if (submitted) {
     return (
@@ -61,8 +92,10 @@ export function TrustFeedbackForm() {
         className="mt-6 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
       />
 
-      <Button className="mt-4" disabled={!rating || !verify} onClick={() => setSubmitted(true)}>
-        Submit Feedback
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+
+      <Button className="mt-4" disabled={!rating || !verify || sending} onClick={handleSubmit}>
+        {sending ? "Submitting…" : "Submit Feedback"}
       </Button>
     </section>
   );

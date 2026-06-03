@@ -1,18 +1,25 @@
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { ASSUMPTIONS } from "@/lib/pil-data";
+import { ASSUMPTIONS, type Assumption } from "@/lib/pil-data";
 import { Button } from "@/components/ui/button";
 
-export function AssumptionCards() {
-  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+interface Props {
+  assumptions?: Assumption[];
+  accepted: Record<string, boolean>;
+  values: Record<string, string>;
+  onAccept: (id: string) => void;
+  onChange: (id: string, value: string) => void;
+}
+
+export function AssumptionCards({ assumptions, accepted, values, onAccept, onChange }: Props) {
+  const items = assumptions && assumptions.length > 0 ? assumptions : ASSUMPTIONS;
   const [editing, setEditing] = useState<Record<string, boolean>>({});
-  const [values, setValues] = useState<Record<string, string>>({});
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <h3 className="font-medium">Assumptions AI May Make</h3>
       <div className="mt-4 space-y-3">
-        {ASSUMPTIONS.map((a) => (
+        {items.map((a) => (
           <div
             key={a.id}
             className="rounded-xl border border-warning/30 bg-warning/5 p-4"
@@ -25,7 +32,7 @@ export function AssumptionCards() {
                 </span>
               ) : (
                 <div className="flex shrink-0 gap-2">
-                  <Button size="sm" onClick={() => setAccepted((p) => ({ ...p, [a.id]: true }))}>
+                  <Button size="sm" onClick={() => onAccept(a.id)}>
                     Accept
                   </Button>
                   <Button
@@ -42,7 +49,7 @@ export function AssumptionCards() {
               <input
                 autoFocus
                 defaultValue={a.text}
-                onChange={(e) => setValues((p) => ({ ...p, [a.id]: e.target.value }))}
+                onChange={(e) => onChange(a.id, e.target.value)}
                 className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             )}

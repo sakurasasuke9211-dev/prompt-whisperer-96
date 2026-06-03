@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, AlertTriangle, ChevronLeft } from "lucide-react";
 
 import { ChatSidebar } from "@/components/pil/ChatSidebar";
@@ -14,7 +15,9 @@ import { EnhancedPromptReview } from "@/components/pil/EnhancedPromptReview";
 import { FinalResponseCard } from "@/components/pil/FinalResponseCard";
 import { TrustFeedbackForm } from "@/components/pil/TrustFeedbackForm";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_PROMPT, ENHANCED_PROMPT, FINAL_RESPONSE, CONTEXT_FIELDS } from "@/lib/pil-data";
+import { DEFAULT_PROMPT, ENHANCED_PROMPT } from "@/lib/pil-data";
+import type { Assumption, ClarifyingQuestion, ContextField, Metric } from "@/lib/pil-data";
+import { analyzePrompt, generateEnhancedPrompt, generateFinalResponse } from "@/lib/pil.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,6 +41,17 @@ export const Route = createFileRoute("/")({
 type Step = "entry" | "analysis" | "review" | "response";
 type Loading = null | "analyzing" | "enhancing" | "generating";
 
+interface AnalysisState {
+  score: number;
+  status: string;
+  fields: ContextField[];
+  assumptions: Assumption[];
+  questions: ClarifyingQuestion[];
+  riskLevel: string;
+  riskReason: string;
+  suggestedEnhancedPrompt: string;
+}
+
 function LoadingOverlay({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
@@ -48,6 +62,10 @@ function LoadingOverlay({ label }: { label: string }) {
 }
 
 function Index() {
+  const runAnalyze = useServerFn(analyzePrompt);
+  const runEnhance = useServerFn(generateEnhancedPrompt);
+  const runFinal = useServerFn(generateFinalResponse);
+
   const [step, setStep] = useState<Step>("entry");
   const [loading, setLoading] = useState<Loading>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,27 +74,117 @@ function Index() {
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
   const [pilEnabled, setPilEnabled] = useState(true);
 
-  const [selectedContext, setSelectedContext] = useState<string[]>(["industry", "geography", "timeHorizon"]);
-  const [contextValues, setContextValues] = useState<Record<string, string>>(
-    Object.fromEntries(CONTEXT_FIELDS.map((f) => [f.key, f.defaultValue])),
-  );
+  const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
+  const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
+  const [finalResponse, setFinalResponse] = useState("");
+  const [finalPrompt, setFinalPrompt] = useState("");
+
+  // Analysis-screen selections
+  const [selectedContext, setSelectedContext] = useState<string[]>([]);
+  const [contextValues, setContextValues] = useState<Record<string, string>>({});
+  const [acceptedAssumptions, setAcceptedAssumptions] = useState<Record<string, boolean>>({});
+  const [assumptionValues, setAssumptionValues] = useState<Record<string, string>>({});
+  const [clarifyingAnswers, setClarifyingAnswers] = useState<Record<string, string>>({});
 
   const headerTitle = step === "review" ? "Enhanced Prompt Review" : "Prompt Intelligence Layer";
 
-  function run(phase: Exclude<Loading, null>, next: Step, label: string) {
+  function resetFlow() {
+    setStep("entry");
+    setPrompt(DEFAULT_PROMPT);
+    setEnhanced(ENHANCED_PROMPT);
+    setAnalysis(null);
+    setMetrics(undefined);
+    setFinalResponse("");
+    setSelectedContext([]);
+    setContextValues({});
+    setAcceptedAssumptions({});
+    setAssumptionValues({});
+    setClarifyingAnswers({});
     setError(null);
-    setLoading(phase);
-    setTimeout(() => {
-      // Simulated chance to demo error state on empty prompt
-      if (!prompt.trim()) {
-        setLoading(null);
-        setError("Please enter a prompt to analyze.");
-        return;
-      }
+  }
+
+  async function handleAnalyze() {
+    if (!prompt.trim()) {
+      setError("Please enter a prompt to analyze.");
+      return;
+    }
+    setError(null);
+    setLoading("analyzing");
+    try {
+      const res = await analyzeNormalize(await runAnalyze({ data: { originalPrompt: prompt } }));
+      setAnalysis(res);
+      setSelectedContext(res.fields.map((f) => f.key));
+      setContextValues(Object.fromEntries(res.fields.map((f) => [f.key, ""])));
+      setAcceptedAssumptions({});
+      setAssumptionValues({});
+      setClarifyingAnswers({});
+      setStep("analysis");
+    } catch {
+      setError("Could not analyze the prompt. Please try again.");
+    } finally {
       setLoading(null);
-      setStep(next);
-    }, 1100);
-    void label;
+    }
+  }
+
+  async function handleEnhance() {
+    if (!analysis) return;
+    setError(null);
+    setLoading("enhancing");
+    try {
+      const accepted = analysis.assumptions
+        .filter((a) => acceptedAssumptions[a.id])
+        .map((a) => assumptionValues[a.id] ?? a.text);
+      const changed: Record<string, string> = {};
+      analysis.assumptions.forEach((a) => {
+        if (assumptionValues[a.id] && assumptionValues[a.id] !== a.text) {
+          changed[a.text] = assumptionValues[a.id];
+        }
+      });
+      const contextAnswers: Record<string, string> = {};
+      analysis.fields.forEach((f) => {
+        if (selectedContext.includes(f.key) && contextValues[f.key]) {
+          contextAnswers[f.label] = contextValues[f.key];
+        }
+      });
+      const clarifying: Record<string, string> = {};
+      analysis.questions.forEach((q) => {
+        if (clarifyingAnswers[q.id]) clarifying[q.text] = clarifyingAnswers[q.id];
+      });
+
+      const res = await runEnhance({
+        data: {
+          originalPrompt: prompt,
+          selectedMissingContext: selectedContext
+            .map((k) => analysis.fields.find((f) => f.key === k)?.label ?? k),
+          contextAnswers,
+          acceptedAssumptions: accepted,
+          changedAssumptions: changed,
+          clarifyingAnswers: clarifying,
+        },
+      });
+      setEnhanced(res.enhancedPrompt);
+      setMetrics(res.metrics);
+      setStep("review");
+    } catch {
+      setError("Could not generate the enhanced prompt. Please try again.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleGenerate(chosenPrompt: string) {
+    setError(null);
+    setLoading("generating");
+    setFinalPrompt(chosenPrompt);
+    try {
+      const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
+      setFinalResponse(res.response);
+      setStep("response");
+    } catch {
+      setError("Could not generate the response. Please try again.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   const toggleContext = (key: string) =>
@@ -84,14 +192,7 @@ function Index() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <ChatSidebar
-        onNewChat={() => {
-          setStep("entry");
-          setPrompt(DEFAULT_PROMPT);
-          setEnhanced(ENHANCED_PROMPT);
-          setError(null);
-        }}
-      />
+      <ChatSidebar onNewChat={resetFlow} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader title={headerTitle} />
@@ -134,7 +235,7 @@ function Index() {
                 <PromptInputBar
                   value={prompt}
                   onChange={setPrompt}
-                  onSubmit={() => run("analyzing", "analysis", "Analyzing prompt quality…")}
+                  onSubmit={handleAnalyze}
                   promptIntelligenceEnabled={pilEnabled}
                   onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
@@ -147,11 +248,7 @@ function Index() {
               )}
 
               <div className="mt-6 flex justify-center">
-                <Button
-                  size="lg"
-                  disabled={!prompt.trim()}
-                  onClick={() => run("analyzing", "analysis", "Analyzing prompt quality…")}
-                >
+                <Button size="lg" disabled={!prompt.trim()} onClick={handleAnalyze}>
                   Analyze Prompt
                 </Button>
               </div>
@@ -159,20 +256,31 @@ function Index() {
           )}
 
           {/* STATE 2 */}
-          {!loading && step === "analysis" && (
+          {!loading && step === "analysis" && analysis && (
             <div className="mx-auto max-w-3xl space-y-5">
               <MissingContextSelector
+                fields={analysis.fields}
                 selected={selectedContext}
                 values={contextValues}
                 onToggle={toggleContext}
                 onChange={(k, v) => setContextValues((p) => ({ ...p, [k]: v }))}
               />
-              <AssumptionCards />
-              <ClarifyingQuestionCards />
-              <ReliabilityRiskCard />
+              <AssumptionCards
+                assumptions={analysis.assumptions}
+                accepted={acceptedAssumptions}
+                values={assumptionValues}
+                onAccept={(id) => setAcceptedAssumptions((p) => ({ ...p, [id]: true }))}
+                onChange={(id, v) => setAssumptionValues((p) => ({ ...p, [id]: v }))}
+              />
+              <ClarifyingQuestionCards
+                questions={analysis.questions}
+                answers={clarifyingAnswers}
+                onAnswer={(id, v) => setClarifyingAnswers((p) => ({ ...p, [id]: v }))}
+              />
+              <ReliabilityRiskCard level={analysis.riskLevel} reason={analysis.riskReason} />
 
               <div className="flex flex-wrap gap-3">
-                <Button size="lg" onClick={() => run("enhancing", "review", "Generating enhanced prompt…")}>
+                <Button size="lg" onClick={handleEnhance}>
                   Generate Enhanced Prompt
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => setStep("entry")}>
@@ -189,15 +297,16 @@ function Index() {
               enhancedPrompt={enhanced}
               onOriginalChange={setPrompt}
               onEnhancedChange={setEnhanced}
-              onGenerate={() => run("generating", "response", "Generating response…")}
+              onGenerate={handleGenerate}
+              metrics={metrics}
             />
           )}
 
           {/* STATE 4 */}
           {!loading && step === "response" && (
             <div className="mx-auto max-w-3xl space-y-6">
-              <FinalResponseCard enhancedPrompt={enhanced} response={FINAL_RESPONSE} />
-              <TrustFeedbackForm />
+              <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
+              <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
               <div>
                 <Button variant="outline" onClick={() => setStep("review")}>
                   <ChevronLeft className="size-4" /> Back to review
@@ -209,4 +318,24 @@ function Index() {
       </div>
     </div>
   );
+}
+
+type AnalyzeResponse = Awaited<ReturnType<typeof analyzePrompt>>;
+
+function analyzeNormalize(res: AnalyzeResponse): AnalysisState {
+  return {
+    score: res.score,
+    status: res.status,
+    fields: res.missingContext.map((c) => ({
+      key: c.key,
+      label: c.label,
+      placeholder: `Enter ${c.label.toLowerCase()}`,
+      defaultValue: "",
+    })),
+    assumptions: res.assumptions.map((text, i) => ({ id: `a${i}`, text })),
+    questions: res.clarifyingQuestions.map((text, i) => ({ id: `q${i}`, text })),
+    riskLevel: res.riskLevel,
+    riskReason: res.riskReason,
+    suggestedEnhancedPrompt: res.suggestedEnhancedPrompt,
+  };
 }
