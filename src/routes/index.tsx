@@ -131,9 +131,10 @@ function Index() {
     setFollowUpInput("");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
+      if (res.mocked) setUsingFallback(true);
       setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
     } catch {
-      setError("Could not generate the response. Please try again.");
+      setError("Could not reach Grok to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -145,9 +146,12 @@ function Index() {
       return;
     }
     setError(null);
+    setUsingFallback(false);
     setLoading("analyzing");
     try {
-      const res = await analyzeNormalize(await runAnalyze({ data: { originalPrompt: prompt } }));
+      const raw = await runAnalyze({ data: { originalPrompt: prompt } });
+      if (raw.mocked) setUsingFallback(true);
+      const res = analyzeNormalize(raw);
       setAnalysis(res);
       setSelectedContext(res.fields.map((f) => f.key));
       setContextValues(Object.fromEntries(res.fields.map((f) => [f.key, ""])));
@@ -156,7 +160,7 @@ function Index() {
       setClarifyingAnswers({});
       setStep("analysis");
     } catch {
-      setError("Could not analyze the prompt. Please try again.");
+      setError("Could not reach Grok to analyze the prompt. Please try again.");
     } finally {
       setLoading(null);
     }
