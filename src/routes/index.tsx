@@ -213,6 +213,7 @@ function Index() {
     setError(null);
     setLoading("generating");
     setFinalPrompt(chosenPrompt);
+    setFinalUsedPil(pilEnabled);
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
       setFinalResponse(res.response);
