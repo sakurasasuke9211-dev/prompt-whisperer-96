@@ -132,7 +132,7 @@ function Index() {
       const res = await runFinal({ data: { enhancedPrompt: text } });
       setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
     } catch {
-      setError("Could not reach Grok to generate the response. Please try again.");
+      setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -156,7 +156,7 @@ function Index() {
       setClarifyingAnswers({});
       setStep("analysis");
     } catch {
-      setError("Could not reach Grok to analyze the prompt. Please try again.");
+      setError("Could not reach the AI to analyze the prompt. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -202,7 +202,7 @@ function Index() {
       setMetrics(res.metrics);
       setStep("review");
     } catch {
-      setError("Could not reach Grok to generate the enhanced prompt. Please try again.");
+      setError("Could not reach the AI to generate the enhanced prompt. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -217,7 +217,7 @@ function Index() {
       setFinalResponse(res.response);
       setStep("response");
     } catch {
-      setError("Could not reach Grok to generate the response. Please try again.");
+      setError("Could not reach the AI to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
