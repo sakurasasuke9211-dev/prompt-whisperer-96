@@ -200,7 +200,6 @@ function Index() {
           clarifyingAnswers: clarifying,
         },
       });
-      if (res.mocked) setUsingFallback(true);
       setEnhanced(res.enhancedPrompt);
       setMetrics(res.metrics);
       setStep("review");
