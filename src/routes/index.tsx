@@ -334,17 +334,30 @@ function Index() {
           {!loading && step === "response" && (
             <div className="mx-auto flex h-full max-w-3xl flex-col">
               <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
+                <FinalResponseCard
+                  enhancedPrompt={finalPrompt || enhanced}
+                  response={finalResponse}
+                  showEnhancedBadge={finalUsedPil}
+                />
                 {followUps.map((m, i) => (
-                  <FinalResponseCard key={i} enhancedPrompt={m.prompt} response={m.response} />
+                  <FinalResponseCard
+                    key={i}
+                    enhancedPrompt={m.prompt}
+                    response={m.response}
+                    showEnhancedBadge={m.usedPil}
+                  />
                 ))}
-                <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                {(finalUsedPil || followUps.some((m) => m.usedPil)) && (
+                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                )}
               </div>
               <div className="sticky bottom-0 bg-background pt-2">
                 <PromptInputBar
                   value={followUpInput}
                   onChange={setFollowUpInput}
                   onSubmit={handleFollowUp}
+                  promptIntelligenceEnabled={pilEnabled}
+                  onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
               </div>
             </div>
