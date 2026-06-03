@@ -217,11 +217,11 @@ function Index() {
   async function handleGenerate(chosenPrompt: string) {
     setError(null);
     setLoading("generating");
-    setFinalPrompt(chosenPrompt);
-    setFinalUsedPil(pilEnabled);
+    const usedPil = pilEnabled;
+    const userPrompt = usedPil ? prompt : chosenPrompt;
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
-      setFinalResponse(res.response);
+      setMessages((p) => [...p, { userPrompt, response: res.response, usedPil }]);
       setStep("response");
     } catch {
       setError("Could not reach the AI to generate the response. Please try again.");
