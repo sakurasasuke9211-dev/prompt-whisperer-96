@@ -106,7 +106,6 @@ function Index() {
     setAssumptionValues({});
     setClarifyingAnswers({});
     setError(null);
-    setUsingFallback(false);
   }
 
   // Submit from screen 1: if "Prompting" is on, run the intelligence flow;
