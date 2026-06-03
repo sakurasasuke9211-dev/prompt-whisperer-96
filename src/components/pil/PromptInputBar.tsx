@@ -43,7 +43,7 @@ export function PromptInputBar({
             }`}
           >
             <Sparkles className="size-3.5" />
-            Intelligence
+            Prompting
           </button>
           <button className="text-muted-foreground transition-colors hover:text-foreground">
             <Mic className="size-5" />
