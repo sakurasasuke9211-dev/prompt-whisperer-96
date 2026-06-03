@@ -326,13 +326,20 @@ function Index() {
 
           {/* STATE 4 */}
           {!loading && step === "response" && (
-            <div className="mx-auto max-w-3xl space-y-6">
-              <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
-              <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
-              <div>
-                <Button variant="outline" onClick={() => setStep("review")}>
-                  <ChevronLeft className="size-4" /> Back to review
-                </Button>
+            <div className="mx-auto flex h-full max-w-3xl flex-col">
+              <div className="flex-1 space-y-6 overflow-y-auto pb-4">
+                <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
+                {followUps.map((m, i) => (
+                  <FinalResponseCard key={i} enhancedPrompt={m.prompt} response={m.response} />
+                ))}
+                <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+              </div>
+              <div className="sticky bottom-0 bg-background pt-2">
+                <PromptInputBar
+                  value={followUpInput}
+                  onChange={setFollowUpInput}
+                  onSubmit={handleFollowUp}
+                />
               </div>
             </div>
           )}
