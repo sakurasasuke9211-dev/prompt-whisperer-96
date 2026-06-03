@@ -131,7 +131,6 @@ function Index() {
     setFollowUpInput("");
     try {
       const res = await runFinal({ data: { enhancedPrompt: text } });
-      if (res.mocked) setUsingFallback(true);
       setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
     } catch {
       setError("Could not reach Grok to generate the response. Please try again.");
