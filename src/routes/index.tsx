@@ -260,8 +260,8 @@ function Index() {
                 </span>
                 <h2 className="mt-5 text-3xl font-semibold">How can I help you today?</h2>
                 <p className="mt-2 max-w-lg text-muted-foreground">
-                  Start a conversation. The intelligence layer below will analyze your prompt quality in
-                  real time.
+                  Turn on <span className="font-medium text-foreground">Prompting</span> to analyze and
+                  improve your prompt first, or send directly to generate a response.
                 </p>
               </div>
 
@@ -269,22 +269,10 @@ function Index() {
                 <PromptInputBar
                   value={prompt}
                   onChange={setPrompt}
-                  onSubmit={handleAnalyze}
+                  onSubmit={handleSubmit}
                   promptIntelligenceEnabled={pilEnabled}
                   onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
-              </div>
-
-              {prompt.trim() && pilEnabled && (
-                <div className="mt-6">
-                  <PromptIntelligencePreview />
-                </div>
-              )}
-
-              <div className="mt-6 flex justify-center">
-                <Button size="lg" disabled={!prompt.trim()} onClick={handleAnalyze}>
-                  Analyze Prompt
-                </Button>
               </div>
             </div>
           )}
