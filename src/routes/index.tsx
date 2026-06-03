@@ -69,6 +69,7 @@ function Index() {
   const [step, setStep] = useState<Step>("entry");
   const [loading, setLoading] = useState<Loading>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
