@@ -202,11 +202,12 @@ function Index() {
           clarifyingAnswers: clarifying,
         },
       });
+      if (res.mocked) setUsingFallback(true);
       setEnhanced(res.enhancedPrompt);
       setMetrics(res.metrics);
       setStep("review");
     } catch {
-      setError("Could not generate the enhanced prompt. Please try again.");
+      setError("Could not reach Grok to generate the enhanced prompt. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -218,10 +219,11 @@ function Index() {
     setFinalPrompt(chosenPrompt);
     try {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
+      if (res.mocked) setUsingFallback(true);
       setFinalResponse(res.response);
       setStep("response");
     } catch {
-      setError("Could not generate the response. Please try again.");
+      setError("Could not reach Grok to generate the response. Please try again.");
     } finally {
       setLoading(null);
     }
