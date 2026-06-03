@@ -140,15 +140,17 @@ function Index() {
     }
   }
 
-  async function handleAnalyze() {
-    if (!prompt.trim()) {
+  async function handleAnalyze(overridePrompt?: string) {
+    const source = (overridePrompt ?? prompt).trim();
+    if (!source) {
       setError("Please enter a prompt to analyze.");
       return;
     }
+    if (overridePrompt) setPrompt(overridePrompt);
     setError(null);
     setLoading("analyzing");
     try {
-      const raw = await runAnalyze({ data: { originalPrompt: prompt } });
+      const raw = await runAnalyze({ data: { originalPrompt: source } });
       const res = analyzeNormalize(raw);
       setAnalysis(res);
       setSelectedContext(res.fields.map((f) => f.key));
