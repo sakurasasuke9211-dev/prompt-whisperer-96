@@ -338,21 +338,16 @@ function Index() {
           {!loading && step === "response" && (
             <div className="mx-auto flex h-full max-w-3xl flex-col">
               <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                <FinalResponseCard
-                  enhancedPrompt={finalPrompt || enhanced}
-                  response={finalResponse}
-                  showEnhancedBadge={finalUsedPil}
-                />
-                {followUps.map((m, i) => (
+                {messages.map((m, i) => (
                   <FinalResponseCard
                     key={i}
-                    enhancedPrompt={m.prompt}
+                    enhancedPrompt={m.userPrompt}
                     response={m.response}
                     showEnhancedBadge={m.usedPil}
                   />
                 ))}
-                {(finalUsedPil || followUps.some((m) => m.usedPil)) && (
-                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+                {messages.some((m) => m.usedPil) && (
+                  <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={enhanced} />
                 )}
               </div>
               <div className="sticky bottom-0 bg-background pt-2">
