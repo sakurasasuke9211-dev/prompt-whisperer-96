@@ -6,7 +6,7 @@ import { Loader2, Sparkles, AlertTriangle, ChevronLeft } from "lucide-react";
 import { ChatSidebar } from "@/components/pil/ChatSidebar";
 import { AppHeader } from "@/components/pil/AppHeader";
 import { PromptInputBar } from "@/components/pil/PromptInputBar";
-import { PromptIntelligencePreview } from "@/components/pil/PromptIntelligencePreview";
+
 import { MissingContextSelector } from "@/components/pil/MissingContextSelector";
 import { AssumptionCards } from "@/components/pil/AssumptionCards";
 import { ClarifyingQuestionCards } from "@/components/pil/ClarifyingQuestionCards";
@@ -72,12 +72,14 @@ function Index() {
 
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [enhanced, setEnhanced] = useState(ENHANCED_PROMPT);
-  const [pilEnabled, setPilEnabled] = useState(true);
+  const [pilEnabled, setPilEnabled] = useState(false);
 
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [metrics, setMetrics] = useState<Metric[] | undefined>(undefined);
   const [finalResponse, setFinalResponse] = useState("");
   const [finalPrompt, setFinalPrompt] = useState("");
+  const [followUps, setFollowUps] = useState<{ prompt: string; response: string }[]>([]);
+  const [followUpInput, setFollowUpInput] = useState("");
 
   // Analysis-screen selections
   const [selectedContext, setSelectedContext] = useState<string[]>([]);
@@ -95,12 +97,44 @@ function Index() {
     setAnalysis(null);
     setMetrics(undefined);
     setFinalResponse("");
+    setFollowUps([]);
+    setFollowUpInput("");
     setSelectedContext([]);
     setContextValues({});
     setAcceptedAssumptions({});
     setAssumptionValues({});
     setClarifyingAnswers({});
     setError(null);
+  }
+
+  // Submit from screen 1: if "Prompting" is on, run the intelligence flow;
+  // otherwise generate the response directly.
+  async function handleSubmit() {
+    if (!prompt.trim()) {
+      setError("Please enter a prompt.");
+      return;
+    }
+    if (pilEnabled) {
+      await handleAnalyze();
+    } else {
+      await handleGenerate(prompt);
+    }
+  }
+
+  async function handleFollowUp() {
+    const text = followUpInput.trim();
+    if (!text) return;
+    setError(null);
+    setLoading("generating");
+    setFollowUpInput("");
+    try {
+      const res = await runFinal({ data: { enhancedPrompt: text } });
+      setFollowUps((p) => [...p, { prompt: text, response: res.response }]);
+    } catch {
+      setError("Could not generate the response. Please try again.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   async function handleAnalyze() {
@@ -226,8 +260,8 @@ function Index() {
                 </span>
                 <h2 className="mt-5 text-3xl font-semibold">How can I help you today?</h2>
                 <p className="mt-2 max-w-lg text-muted-foreground">
-                  Start a conversation. The intelligence layer below will analyze your prompt quality in
-                  real time.
+                  Turn on <span className="font-medium text-foreground">Prompting</span> to analyze and
+                  improve your prompt first, or send directly to generate a response.
                 </p>
               </div>
 
@@ -235,22 +269,10 @@ function Index() {
                 <PromptInputBar
                   value={prompt}
                   onChange={setPrompt}
-                  onSubmit={handleAnalyze}
+                  onSubmit={handleSubmit}
                   promptIntelligenceEnabled={pilEnabled}
                   onTogglePromptIntelligence={() => setPilEnabled((p) => !p)}
                 />
-              </div>
-
-              {prompt.trim() && pilEnabled && (
-                <div className="mt-6">
-                  <PromptIntelligencePreview />
-                </div>
-              )}
-
-              <div className="mt-6 flex justify-center">
-                <Button size="lg" disabled={!prompt.trim()} onClick={handleAnalyze}>
-                  Analyze Prompt
-                </Button>
               </div>
             </div>
           )}
@@ -304,13 +326,20 @@ function Index() {
 
           {/* STATE 4 */}
           {!loading && step === "response" && (
-            <div className="mx-auto max-w-3xl space-y-6">
-              <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
-              <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
-              <div>
-                <Button variant="outline" onClick={() => setStep("review")}>
-                  <ChevronLeft className="size-4" /> Back to review
-                </Button>
+            <div className="mx-auto flex h-full max-w-3xl flex-col">
+              <div className="flex-1 space-y-6 overflow-y-auto pb-4">
+                <FinalResponseCard enhancedPrompt={finalPrompt || enhanced} response={finalResponse} />
+                {followUps.map((m, i) => (
+                  <FinalResponseCard key={i} enhancedPrompt={m.prompt} response={m.response} />
+                ))}
+                <TrustFeedbackForm originalPrompt={prompt} enhancedPrompt={finalPrompt || enhanced} />
+              </div>
+              <div className="sticky bottom-0 bg-background pt-2">
+                <PromptInputBar
+                  value={followUpInput}
+                  onChange={setFollowUpInput}
+                  onSubmit={handleFollowUp}
+                />
               </div>
             </div>
           )}
