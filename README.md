@@ -2,6 +2,8 @@
 
 An AI chat interface that optionally analyzes and enhances your prompts before generating responses — reducing assumptions, surfacing missing context, and improving output trust.
 
+## Live Demo: https://prompt-whisperer-96.lovable.app
+
 ## Overview
 
 Prompt Intelligence Layer (PIL) sits between you and the AI. When enabled, it:
