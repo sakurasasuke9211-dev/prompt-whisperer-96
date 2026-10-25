@@ -29,6 +29,8 @@ export const Route = createFileRoute("/")({
           "Analyze prompt quality, surface missing context and assumptions, and generate higher-trust AI responses with less verification.",
       },
       { property: "og:title", content: "Prompt Intelligence Layer" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         property: "og:description",
         content: "Prompt → Prompt Intelligence Layer → Better Prompt → Higher Trust Output → Less Verification.",
@@ -135,8 +137,8 @@ function Index() {
       const res = await runFinal({ data: { enhancedPrompt: text } });
       setMessages((p) => [...p, { userPrompt: text, response: res.response, usedPil: false }]);
       setStep("response");
-    } catch {
-      setError("Could not reach the AI to generate the response. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -161,8 +163,8 @@ function Index() {
       setAssumptionValues({});
       setClarifyingAnswers({});
       setStep("analysis");
-    } catch {
-      setError("Could not reach the AI to analyze the prompt. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -207,8 +209,8 @@ function Index() {
       setEnhanced(res.enhancedPrompt);
       setMetrics(res.metrics);
       setStep("review");
-    } catch {
-      setError("Could not reach the AI to generate the enhanced prompt. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
     } finally {
       setLoading(null);
     }
@@ -223,8 +225,8 @@ function Index() {
       const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
       setMessages((p) => [...p, { userPrompt, response: res.response, usedPil }]);
       setStep("response");
-    } catch {
-      setError("Could not reach the AI to generate the response. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
     } finally {
       setLoading(null);
     }
