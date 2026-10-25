@@ -1,4 +1,4 @@
-import { callGroq, safeJsonParse } from "./grok.server";
+import { callGemini, safeJsonParse } from "./gemini.server";
 
 // Shared types for the Prompt Intelligence Layer backend.
 
@@ -41,7 +41,7 @@ function statusForScore(score: number): string {
   return "Weak";
 }
 
-// ---- Core logic (Groq-backed) ----
+// ---- Core logic (Gemini-backed) ----
 
 export async function analyzePromptLogic(originalPrompt: string): Promise<AnalyzePromptResult> {
   const system =
@@ -50,7 +50,7 @@ export async function analyzePromptLogic(originalPrompt: string): Promise<Analyz
     '"assumptions": string[], "clarifyingQuestions": string[], "riskLevel": "Low"|"Medium"|"High", ' +
     '"riskReason": string, "suggestedEnhancedPrompt": string}.';
 
-  const { text } = await callGroq({
+  const { text } = await callGemini({
     system,
     prompt: `Analyze this prompt:\n"""${originalPrompt}"""`,
     json: true,
@@ -103,7 +103,7 @@ export async function generateEnhancedPromptLogic(
     'Respond ONLY with strict JSON: {"enhancedPrompt": string, "newScore": number (0-100), ' +
     '"metrics": [{"label": string, "from": string, "to": string, "positive": boolean}]}.';
 
-  const { text } = await callGroq({
+  const { text } = await callGemini({
     system,
     prompt: `Original prompt:\n"""${input.originalPrompt}"""\n\nContext & answers:\n${JSON.stringify(detail, null, 2)}`,
     json: true,
@@ -123,7 +123,7 @@ export async function generateEnhancedPromptLogic(
 }
 
 export async function generateFinalResponseLogic(enhancedPrompt: string): Promise<FinalResponseResult> {
-  const { text } = await callGroq({
+  const { text } = await callGemini({
     system: "You are a helpful, reliable assistant. Answer clearly and cite assumptions where relevant.",
     prompt: enhancedPrompt,
   });
