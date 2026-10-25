@@ -1,2 +1,2 @@
-- [ ] Switch prompt analysis, enhancement, and answers from Groq to Gemini.
-- [ ] Verify Gemini requests and the app’s main flow.
+- [x] Switch prompt analysis, enhancement, and answers from Groq to Gemini.
+- [x] Verify Gemini requests and the app’s main flow.

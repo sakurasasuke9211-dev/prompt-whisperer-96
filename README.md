@@ -30,7 +30,7 @@ When disabled, it works like a standard AI chat tool.
 - **Styling:** Tailwind CSS v4 + shadcn/ui components
 - **State:** React state + TanStack Query
 - **Server:** TanStack `createServerFn` (serverless Worker runtime)
-- **AI Backend:** [Groq API](https://groq.com/) (Llama 3.3 70B)
+- **AI Backend:** Gemini 3.8 Flash through Lovable AI (workspace-credit billing)
 - **Language:** TypeScript (strict)
 
 ## Project Structure
@@ -57,9 +57,11 @@ src/
 │       └── ...
 ├── lib/
 │   ├── pil-data.ts          # Static data, types, defaults
-│   ├── pil.server.ts        # Core AI logic (Groq-backed)
+│   ├── pil.server.ts        # Core AI logic (Gemini-backed)
 │   ├── pil.functions.ts     # createServerFn wrappers (client-safe imports)
-│   └── grok.server.ts       # Groq API client (server-only)
+│   ├── gemini.server.ts     # Gemini client (server-only)
+│   ├── ai-provider.server.ts # Request-local AI provider
+│   └── ai-run-id.server.ts  # Gateway request correlation
 ├── styles.css               # Tailwind v4 entry + theme tokens
 └── router.tsx               # TanStack Router setup
 ```
@@ -88,7 +90,7 @@ All AI calls go through `createServerFn` RPC:
 
 ### Security
 
-- **Groq API key** is stored in Lovable Secret Manager (`GROQ_API_KEY`), never in code
+- **Lovable AI key** is managed securely (`LOVABLE_API_KEY`), never in code; Groq secrets are no longer used
 - Server-only files (`*.server.ts`) are stripped from client bundles automatically
 - No hardcoded secrets in the repository
 
@@ -97,7 +99,7 @@ All AI calls go through `createServerFn` RPC:
 ### Prerequisites
 
 - [Bun](https://bun.sh/) (recommended) or Node.js 20+
-- A [Groq](https://console.groq.com) API key
+- A configured Lovable AI connection and workspace AI credits
 
 ### Install
 
@@ -107,18 +109,13 @@ bun install
 
 ### Environment
 
-The Groq API key is managed via Lovable Secret Manager. For local development, set it in your environment:
+The Lovable AI key is managed via Lovable Secret Manager. For local development, supply it through your server environment; never commit its value:
 
 ```bash
-export GROQ_API_KEY="your_groq_api_key"
+export LOVABLE_API_KEY="your_local_server_key"
 ```
 
-Optional overrides:
-
-```bash
-export GROQ_BASE_URL="https://api.groq.com/openai/v1"  # default
-export GROQ_MODEL="llama-3.3-70b-versatile"               # default
-```
+All three AI operations use `google/gemini-3.8-flash` through Lovable AI. Requests stream server-side; failures produce errors, never demo answers.
 
 ### Run Dev Server
 
@@ -147,7 +144,7 @@ bun run format
 |------|---------|
 | `src/routes/index.tsx` | Main application — state machine, all 4 steps, chat thread |
 | `src/lib/pil.server.ts` | Core AI orchestration (analyze → enhance → respond) |
-| `src/lib/grok.server.ts` | Groq API client with JSON-safe parsing |
+| `src/lib/gemini.server.ts` | Server-only Gemini calls with JSON-safe parsing |
 | `src/lib/pil.functions.ts` | Typed `createServerFn` RPC definitions |
 | `src/components/pil/PromptInputBar.tsx` | Input bar with PIL toggle |
 | `src/components/pil/EnhancedPromptReview.tsx` | Side-by-side prompt comparison |
@@ -165,17 +162,13 @@ export const DEFAULT_PROMPT = "Your default prompt here";
 
 ### Change the AI Model
 
-Set the `GROQ_MODEL` environment variable to any model available on Groq:
-
-```bash
-export GROQ_MODEL="llama-3.1-8b-instant"
-```
+Update the model identifier in the server-only Gemini helper after confirming availability in the authenticated Lovable AI catalog.
 
 ### Add Database Persistence
 
 Currently, feedback is logged server-side. To persist to a database:
 
-1. Enable **Lovable Cloud** (built-in PostgreSQL + auth)
+1. **Lovable Cloud** is already enabled (built-in database, storage, and optional auth)
 2. Add a `feedback` table via migration
 3. Replace the `console.log` in `submitFeedback` handler with a `supabase` insert
 
