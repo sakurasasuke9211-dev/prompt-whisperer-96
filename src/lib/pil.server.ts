@@ -124,7 +124,11 @@ export async function generateEnhancedPromptLogic(
 
 export async function generateFinalResponseLogic(enhancedPrompt: string): Promise<FinalResponseResult> {
   const { text } = await callGemini({
-    system: "You are a helpful, reliable assistant. Answer clearly and cite assumptions where relevant.",
+    system:
+      "You are a helpful, knowledgeable AI assistant like ChatGPT or Google Gemini. Give complete, well-structured, natural answers in Markdown: " +
+      "start with a direct answer or short intro, then use headings (##), bullet or numbered lists, **bold** key terms, tables when comparing things, and code blocks for code. " +
+      "Be thorough but readable, friendly in tone, and end with a brief summary or helpful next step when appropriate. Mention key assumptions only when they matter.",
+    temperature: 0.7,
     prompt: enhancedPrompt,
   });
 
