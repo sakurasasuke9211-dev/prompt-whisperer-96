@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, AlertTriangle, ChevronLeft } from "lucide-react";
 
@@ -83,6 +83,53 @@ function Index() {
   >([]);
   const [followUpInput, setFollowUpInput] = useState("");
 
+  // Saved conversations shown in the sidebar (kept in this browser).
+  type SavedChat = { id: string; title: string; messages: typeof messages };
+  const [chats, setChats] = useState<SavedChat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pil-chats");
+      if (raw) setChats(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Keep the active chat in the sidebar list in sync with the thread.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    setChats((prev) => {
+      let id = activeChatId;
+      let next: SavedChat[];
+      if (id && prev.some((c) => c.id === id)) {
+        next = prev.map((c) => (c.id === id ? { ...c, messages } : c));
+      } else {
+        id = id ?? crypto.randomUUID();
+        const title = messages[0].userPrompt.trim().slice(0, 60) || "New chat";
+        next = [{ id, title, messages }, ...prev];
+        setActiveChatId(id);
+      }
+      try {
+        localStorage.setItem("pil-chats", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  function selectChat(id: string) {
+    const chat = chats.find((c) => c.id === id);
+    if (!chat) return;
+    resetFlow();
+    setActiveChatId(id);
+    setMessages(chat.messages);
+    setStep("response");
+  }
+
   // Analysis-screen selections
   const [selectedContext, setSelectedContext] = useState<string[]>([]);
   const [contextValues, setContextValues] = useState<Record<string, string>>({});
@@ -93,6 +140,7 @@ function Index() {
   const headerTitle = step === "review" ? "Enhanced Prompt Review" : "Prompt Intelligence Layer";
 
   function resetFlow() {
+    setActiveChatId(null);
     setStep("entry");
     setPrompt(DEFAULT_PROMPT);
     setEnhanced(ENHANCED_PROMPT);
@@ -253,7 +301,12 @@ function Index() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <ChatSidebar onNewChat={resetFlow} />
+      <ChatSidebar
+        onNewChat={resetFlow}
+        chats={chats.map((c) => ({ id: c.id, title: c.title }))}
+        activeId={activeChatId}
+        onSelect={selectChat}
+      />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader title={headerTitle} />
