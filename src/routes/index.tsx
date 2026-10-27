@@ -17,7 +17,7 @@ import { TrustFeedbackForm } from "@/components/pil/TrustFeedbackForm";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_PROMPT, ENHANCED_PROMPT } from "@/lib/pil-data";
 import type { Assumption, ClarifyingQuestion, ContextField, Metric } from "@/lib/pil-data";
-import { analyzePrompt, generateEnhancedPrompt, generateFinalResponse } from "@/lib/pil.functions";
+import { analyzePrompt, generateEnhancedPrompt } from "@/lib/pil.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,7 +66,6 @@ function LoadingOverlay({ label }: { label: string }) {
 function Index() {
   const runAnalyze = useServerFn(analyzePrompt);
   const runEnhance = useServerFn(generateEnhancedPrompt);
-  const runFinal = useServerFn(generateFinalResponse);
 
   const [step, setStep] = useState<Step>("entry");
   const [loading, setLoading] = useState<Loading>(null);
@@ -123,6 +122,44 @@ function Index() {
     }
   }
 
+  async function streamAnswer(userPrompt: string, sendPrompt: string, usedPil: boolean) {
+    setError(null);
+    setLoading("generating");
+    let started = false;
+    try {
+      const res = await fetch("/api/answer-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: sendPrompt }),
+      });
+      if (!res.ok || !res.body) {
+        throw new Error((await res.text().catch(() => "")) || "Could not reach Gemini. Please try again.");
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        if (!started) {
+          started = true;
+          setMessages((p) => [...p, { userPrompt, response: text, usedPil }]);
+          setStep("response");
+          setLoading(null);
+        } else {
+          const t = text;
+          setMessages((p) => p.map((m, i) => (i === p.length - 1 ? { ...m, response: t } : m)));
+        }
+      }
+      if (!started) throw new Error("Gemini returned no answer. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   async function handleFollowUp() {
     const text = followUpInput.trim();
     if (!text) return;
@@ -131,17 +168,7 @@ function Index() {
       await handleAnalyze(text);
       return;
     }
-    setError(null);
-    setLoading("generating");
-    try {
-      const res = await runFinal({ data: { enhancedPrompt: text } });
-      setMessages((p) => [...p, { userPrompt: text, response: res.response, usedPil: false }]);
-      setStep("response");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
-    } finally {
-      setLoading(null);
-    }
+    await streamAnswer(text, text, false);
   }
 
   async function handleAnalyze(overridePrompt?: string) {
@@ -217,19 +244,8 @@ function Index() {
   }
 
   async function handleGenerate(chosenPrompt: string) {
-    setError(null);
-    setLoading("generating");
     const usedPil = pilEnabled;
-    const userPrompt = usedPil ? prompt : chosenPrompt;
-    try {
-      const res = await runFinal({ data: { enhancedPrompt: chosenPrompt } });
-      setMessages((p) => [...p, { userPrompt, response: res.response, usedPil }]);
-      setStep("response");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not reach Gemini. Please try again.");
-    } finally {
-      setLoading(null);
-    }
+    await streamAnswer(usedPil ? prompt : chosenPrompt, chosenPrompt, usedPil);
   }
 
   const toggleContext = (key: string) =>
