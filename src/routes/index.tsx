@@ -100,16 +100,15 @@ function Index() {
   // Keep the active chat in the sidebar list in sync with the thread.
   useEffect(() => {
     if (messages.length === 0) return;
+    const id = activeChatId ?? crypto.randomUUID();
+    if (!activeChatId) setActiveChatId(id);
     setChats((prev) => {
-      let id = activeChatId;
       let next: SavedChat[];
-      if (id && prev.some((c) => c.id === id)) {
+      if (prev.some((c) => c.id === id)) {
         next = prev.map((c) => (c.id === id ? { ...c, messages } : c));
       } else {
-        id = id ?? crypto.randomUUID();
         const title = messages[0].userPrompt.trim().slice(0, 60) || "New chat";
         next = [{ id, title, messages }, ...prev];
-        setActiveChatId(id);
       }
       try {
         localStorage.setItem("pil-chats", JSON.stringify(next));
