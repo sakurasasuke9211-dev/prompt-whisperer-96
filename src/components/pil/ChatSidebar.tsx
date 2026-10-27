@@ -1,7 +1,18 @@
 import { Plus, Search, Sparkles, MessageSquare, ChevronDown } from "lucide-react";
-import { CHAT_HISTORY } from "@/lib/pil-data";
 
-export function ChatSidebar({ onNewChat }: { onNewChat: () => void }) {
+export interface ChatSummary {
+  id: string;
+  title: string;
+}
+
+interface Props {
+  onNewChat: () => void;
+  chats: ChatSummary[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}
+
+export function ChatSidebar({ onNewChat, chats, activeId, onSelect }: Props) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-4 py-4">
@@ -25,24 +36,27 @@ export function ChatSidebar({ onNewChat }: { onNewChat: () => void }) {
       </button>
 
       <nav className="flex-1 overflow-y-auto px-2 pb-4">
-        {Object.entries(CHAT_HISTORY).map(([group, items]) => (
-          <div key={group} className="mb-4">
+        {chats.length === 0 ? (
+          <p className="px-2 py-2 text-sm text-muted-foreground">No chats yet</p>
+        ) : (
+          <div className="mb-4">
             <p className="px-2 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {group}
+              Recent
             </p>
-            {items.map((item, i) => (
+            {chats.map((chat) => (
               <button
-                key={item}
+                key={chat.id}
+                onClick={() => onSelect(chat.id)}
                 className={`flex w-full items-center gap-2 truncate rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent ${
-                  group === "Today" && i === 0 ? "bg-sidebar-accent" : ""
+                  chat.id === activeId ? "bg-sidebar-accent" : ""
                 }`}
               >
                 <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{item}</span>
+                <span className="truncate">{chat.title}</span>
               </button>
             ))}
           </div>
-        ))}
+        )}
       </nav>
 
       <div className="flex items-center justify-between border-t border-sidebar-border px-3 py-3">
